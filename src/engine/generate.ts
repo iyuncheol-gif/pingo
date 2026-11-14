@@ -41,11 +41,15 @@ const tokenize = (sentence: Sentence) =>
 const koTokenize = (sentence: Sentence) =>
   sentence.koTokens ?? sentence.ko.replace(/[.,?!]/g, "").split(/\s+/).filter(Boolean);
 
-/** 한 유닛을 레슨 수만큼 쪼개 각 레슨이 맡을 단어/문장을 정한다. */
-function slice<T>(items: T[], lessonIndex: number, lessonCount: number): T[] {
-  const per = Math.max(2, Math.ceil(items.length / lessonCount));
-  const start = Math.min(lessonIndex * per, Math.max(0, items.length - per));
-  return items.slice(start, start + per);
+/** 유닛의 재료를 레슨 수만큼 겹치지 않게 균등 분할한다.
+    (이전 구현은 마지막 레슨들이 같은 구간을 다시 받아 문장이 그대로 반복됐다) */
+function partition<T>(items: T[], lessonIndex: number, lessonCount: number): { own: T[]; earlier: T[] } {
+  if (items.length === 0) return { own: [], earlier: [] };
+  const per = Math.max(1, Math.floor(items.length / lessonCount));
+  const extra = items.length % lessonCount;
+  const start = lessonIndex * per + Math.min(lessonIndex, extra);
+  const size = per + (lessonIndex < extra ? 1 : 0);
+  return { own: items.slice(start, start + size), earlier: items.slice(0, start) };
 }
 
 /** 미끼 단어는 아직 안 배운 상위 난이도에서 끌어오지 않는다 — 초반 레슨이 억지스러워지지 않게. */
@@ -76,12 +80,18 @@ export function buildLesson(spec: LessonSpec, attempt = 0): Exercise[] {
   const rule = TIER_RULES[effectiveTier];
   const rand = mulberry32(hashString(`${spec.unitId}:${spec.lessonIndex}:${attempt}`));
 
-  const words = spec.isReview ? unit.words : slice(unit.words, spec.lessonIndex, unit.lessonCount);
-  const sentences = spec.isReview
-    ? unit.sentences
-    : slice(unit.sentences, spec.lessonIndex, unit.lessonCount);
+  /* 이번 레슨에서 "새로 배우는" 재료와, 같은 유닛에서 이미 지나온 복습 재료를 나눈다.
+     복습 재료까지 풀에 넣어야 한 레슨 안에서 같은 문장이 반복되지 않는다. */
+  const wordSplit = partition(unit.words, spec.lessonIndex, unit.lessonCount);
+  const sentenceSplit = partition(unit.sentences, spec.lessonIndex, unit.lessonCount);
 
-  const outsideWords = distractorPool(words, effectiveTier);
+  const words = spec.isReview ? unit.words : wordSplit.own;
+  const reviewWords = spec.isReview ? [] : wordSplit.earlier;
+  const newSentences = spec.isReview ? unit.sentences : sentenceSplit.own;
+  const reviewSentences = spec.isReview ? [] : sentenceSplit.earlier;
+  const sentences = [...newSentences, ...reviewSentences];
+
+  const outsideWords = distractorPool([...words, ...reviewWords], effectiveTier);
   const sentencePool = ALL_UNITS.filter((entry) => entry.section.tier <= effectiveTier).flatMap(
     (entry) => entry.unit.sentences,
   );
@@ -108,31 +118,34 @@ export function buildLesson(spec: LessonSpec, attempt = 0): Exercise[] {
     });
   });
 
-  words
-    .filter((w) => !hasArt(w.en) || spec.isReview || effectiveTier >= 3)
-    .forEach((word, index) => {
-      const askKorean = rand() > 0.45;
-      const decoys = sample(outsideWords, rule.choices - 1, rand);
-      items.push({
-        kind: "pick-word",
-        id: nextId(),
-        prompt: askKorean
-          ? `'${word.en}'의 뜻으로 알맞은 것은?`
-          : `'${word.ko}'${josa(word.ko, "을를")} 영어로 어떻게 쓸까요?`,
-        promptEn: askKorean ? word.en : undefined,
-        answer: askKorean ? word.ko : word.en,
-        choices: shuffle(
-          [
-            askKorean ? word.ko : word.en,
-            ...decoys.map((d) => (askKorean ? d.ko : d.en)),
-          ],
-          rand,
-        ),
-        isNew: index < 2 && !spec.isReview && spec.lessonIndex === 0 && artWords.length === 0,
-      });
+  /** 뜻 고르기 — 방향(영→한 / 한→영)을 따로 출제해 인지 문제 수를 확보한다 */
+  const pushPickWord = (word: Word, askKorean: boolean, isNew: boolean) => {
+    const decoys = sample(outsideWords, rule.choices - 1, rand);
+    items.push({
+      kind: "pick-word",
+      id: nextId(),
+      prompt: askKorean
+        ? `'${word.en}'의 뜻으로 알맞은 것은?`
+        : `'${word.ko}'${josa(word.ko, "을를")} 영어로 어떻게 쓸까요?`,
+      promptEn: askKorean ? word.en : undefined,
+      answer: askKorean ? word.ko : word.en,
+      choices: shuffle(
+        [askKorean ? word.ko : word.en, ...decoys.map((d) => (askKorean ? d.ko : d.en))],
+        rand,
+      ),
+      isNew,
     });
+  };
 
-  /* --- 2) 문장 다루기 --- */
+  // 새로 배우는 단어는 양방향으로, 이미 지나온 단어는 한 방향으로
+  words.forEach((word, index) => {
+    const markNew = index < 2 && !spec.isReview && spec.lessonIndex === 0 && artWords.length === 0;
+    pushPickWord(word, true, markNew);
+    pushPickWord(word, false, false);
+  });
+  reviewWords.forEach((word) => pushPickWord(word, rand() > 0.5, false));
+
+  /* --- 2) 문장 다루기 — 문장 하나당 문제 하나. 같은 문장이 여러 번 나오지 않게 한다 --- */
   sentences.forEach((sentence) => {
     const roll = rand();
     const enTokens = tokenize(sentence);
@@ -210,25 +223,30 @@ export function buildLesson(spec: LessonSpec, attempt = 0): Exercise[] {
     return score(x) - score(y);
   });
   const chosenRecognition = recogSorted.slice(0, wantRecognition);
-  const chosenProduction: Exercise[] = shuffle(production, rand).slice(0, wantProduction);
 
-  // 모자라면 문장 문제로 채운다
+  // 이번 레슨에서 새로 배우는 문장을 먼저, 그다음 복습 문장을 담는다
+  const freshKeys = new Set(newSentences.map((item) => item.en));
+  const sentenceOf = (item: Exercise) =>
+    "sentence" in item && item.sentence ? item.sentence.en : "";
+  const fresh = shuffle(
+    production.filter((item) => freshKeys.has(sentenceOf(item))),
+    rand,
+  );
+  const revisit = shuffle(
+    production.filter((item) => !freshKeys.has(sentenceOf(item))),
+    rand,
+  );
+  const chosenProduction: Exercise[] = [...fresh, ...revisit].slice(0, wantProduction);
+
+  /* 문장이 모자라 칸을 못 채우면 같은 문장을 또 내지 말고
+     인지 문제를 더 넣는다 — 같은 문장 반복이 가장 큰 불만이었다 */
+  let spare = wantRecognition;
   while (
     chosenRecognition.length + chosenProduction.length + wantMatch < target &&
-    sentences.length > 0
+    spare < recogSorted.length
   ) {
-    const sentence = pick(sentences, rand);
-    const enTokens = tokenize(sentence);
-    chosenProduction.push({
-      kind: rand() > 0.5 ? "listen" : "word-bank",
-      id: nextId(),
-      direction: "ko->en",
-      prompt: sentence.ko,
-      tokens: enTokens,
-      bank: buildBank(enTokens, tokenPool, rule, rand),
-      sentence,
-      isNew: false,
-    } as Exercise);
+    chosenRecognition.push(recogSorted[spare]);
+    spare += 1;
   }
 
   /* 듣기는 레슨마다 최소 1개 보장 — 확률만으로는 한 레슨 내내 안 나오는 경우가 잦다 */
