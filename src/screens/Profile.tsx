@@ -136,9 +136,53 @@ export function Profile() {
       </section>
 
       <section className="card panel">
+        <h3 className="panel__title">학습자 프로필</h3>
+        <p className="t-cap" style={{ marginBottom: 12 }}>
+          한 기기를 여러 명이 쓸 때 프로필을 나누면 진도가 섞이지 않아요.
+        </p>
+        <ul className="profiles">
+          {state.profiles.map((profile) => {
+            const active = profile.id === state.profileId;
+            return (
+              <li key={profile.id} className={`profiles__row ${active ? "is-on" : ""}`}>
+                <span className="ava" style={{ width: 34, height: 34, fontSize: 13 }}>
+                  {profile.name.slice(0, 1)}
+                </span>
+                <button
+                  type="button"
+                  className="profiles__name"
+                  onClick={() => !active && actions.switchProfile(profile.id)}
+                >
+                  {profile.name}
+                  {active && <em>사용 중</em>}
+                </button>
+                {state.profiles.length > 1 && !active && (
+                  <button
+                    type="button"
+                    className="profiles__remove"
+                    aria-label={`${profile.name} 프로필 삭제`}
+                    onClick={() => {
+                      if (window.confirm(`'${profile.name}' 프로필과 진도를 지울까요?`)) {
+                        actions.removeProfile(profile.id);
+                      }
+                    }}
+                  >
+                    삭제
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+        <Button tone="ghost" style={{ marginTop: 12 }} onClick={actions.addProfile}>
+          새 학습자 추가
+        </Button>
+      </section>
+
+      <section className="card panel">
         <h3 className="panel__title">데이터</h3>
         <p className="t-cap" style={{ marginBottom: 12 }}>
-          모든 진도와 재화는 이 브라우저에만 저장됩니다.
+          진도와 재화는 이 브라우저의 프로필별로 저장됩니다. 서버에 올라가지 않아요.
         </p>
         <Button
           tone="ghost"
@@ -146,7 +190,7 @@ export function Profile() {
             if (window.confirm("모든 학습 기록을 지우고 처음부터 시작할까요?")) actions.reset();
           }}
         >
-          진도 초기화
+          이 프로필 진도 초기화
         </Button>
       </section>
     </div>

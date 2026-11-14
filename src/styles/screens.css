@@ -1591,3 +1591,50 @@
   color: var(--no-ink) !important;
   opacity: 0.75;
 }
+
+/* ---------- 학습자 프로필 ---------- */
+.profiles {
+  display: grid;
+  gap: 8px;
+}
+.profiles__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  border: 2px solid var(--line);
+}
+.profiles__row.is-on {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+}
+.profiles__name {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.profiles__name em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+  color: #fff;
+}
+.profiles__remove {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--no);
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+}
+.profiles__remove:hover {
+  background: var(--no-soft);
+}

@@ -46,8 +46,16 @@ export interface QuestProgress {
   listen: number;
 }
 
+export interface ProfileMeta {
+  id: string;
+  name: string;
+}
+
 export interface State {
   ready: boolean;
+  /** 현재 사용 중인 로컬 프로필 */
+  profileId: string;
+  profiles: ProfileMeta[];
   onboarded: boolean;
   name: string;
   reason: string;
@@ -87,6 +95,8 @@ const EMPTY_QUESTS: QuestProgress = { xp: 0, lessons: 0, perfect: 0, listen: 0 }
 
 const initial: State = {
   ready: false,
+  profileId: "",
+  profiles: [],
   onboarded: false,
   name: "학습자",
   reason: "",
@@ -152,7 +162,8 @@ function rollDay(state: State): State {
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "hydrate":
-      return rollDay(withRegen({ ...state, ...action.state, ready: true }));
+      // 프로필 전환에도 쓰이므로 넘겨받지 않은 값은 초기값으로 되돌린다
+      return rollDay(withRegen({ ...initial, ...action.state, ready: true }));
 
     case "onboard": {
       /* 건너뛴 유닛은 '통과'로 표시한다.
@@ -248,7 +259,54 @@ const nodeCountOf = (unitId: string) => {
   return ref ? nodeCount(ref.unit) : 0;
 };
 
-const STORAGE_KEY = "pingo.v1";
+/* ----- 저장소 -----
+   한 브라우저에 여러 명이 번갈아 쓰는 경우가 있어 프로필별로 나눠 저장한다.
+   예전 단일 키(pingo.v1)는 첫 실행 때 프로필 하나로 옮긴다. */
+const LEGACY_KEY = "pingo.v1";
+const PROFILES_KEY = "pingo.profiles";
+const stateKey = (id: string) => `pingo.state.${id}`;
+
+const newId = () => `p${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;
+
+interface ProfileIndex {
+  active: string;
+  list: ProfileMeta[];
+}
+
+function readJSON<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeJSON(key: string, value: unknown) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* 저장 실패는 조용히 무시 — 학습 흐름을 막지 않는다 */
+  }
+}
+
+export function loadProfileIndex(): ProfileIndex {
+  const saved = readJSON<ProfileIndex>(PROFILES_KEY);
+  if (saved?.list?.length) return saved;
+
+  // 기존 단일 저장본을 첫 프로필로 승계
+  const legacy = readJSON<Partial<State>>(LEGACY_KEY);
+  const id = newId();
+  const index: ProfileIndex = {
+    active: id,
+    list: [{ id, name: legacy?.name || "학습자 1" }],
+  };
+  if (legacy) writeJSON(stateKey(id), legacy);
+  writeJSON(PROFILES_KEY, index);
+  return index;
+}
+
+export const loadProfileState = (id: string) => readJSON<Partial<State>>(stateKey(id)) ?? {};
 
 interface Ctx {
   state: State;
@@ -261,22 +319,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initial);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      dispatch({ type: "hydrate", state: raw ? (JSON.parse(raw) as Partial<State>) : {} });
-    } catch {
-      dispatch({ type: "hydrate", state: {} });
-    }
+    const index = loadProfileIndex();
+    const active = index.list.find((p) => p.id === index.active) ?? index.list[0];
+    dispatch({
+      type: "hydrate",
+      state: { ...loadProfileState(active.id), profileId: active.id, profiles: index.list },
+    });
   }, []);
 
   useEffect(() => {
-    if (!state.ready) return;
-    try {
-      const { ready: _ready, ...persisted } = state;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
-    } catch {
-      /* 저장 실패는 조용히 무시 — 학습 흐름을 막지 않는다 */
-    }
+    if (!state.ready || !state.profileId) return;
+    const { ready: _ready, profiles: _profiles, profileId, ...persisted } = state;
+    writeJSON(stateKey(profileId), persisted);
+    // 프로필 이름은 온보딩에서 정해지므로 목록에 반영해 준다
+    const list = state.profiles.map((p) =>
+      p.id === profileId && state.name && p.name !== state.name ? { ...p, name: state.name } : p,
+    );
+    writeJSON(PROFILES_KEY, { active: profileId, list });
   }, [state]);
 
   // 하트 회복 타이머
@@ -336,6 +395,42 @@ export function useActions() {
       buyFreeze: () => dispatch({ type: "buyFreeze" }),
       setSettings: (patch: Partial<Settings>) => dispatch({ type: "settings", patch }),
       reset: () => dispatch({ type: "reset" }),
+
+      switchProfile: (id: string) => {
+        const index = loadProfileIndex();
+        if (!index.list.some((p) => p.id === id)) return;
+        dispatch({
+          type: "hydrate",
+          state: { ...loadProfileState(id), profileId: id, profiles: index.list },
+        });
+      },
+
+      addProfile: () => {
+        const index = loadProfileIndex();
+        const id = newId();
+        const list = [...index.list, { id, name: `학습자 ${index.list.length + 1}` }];
+        const name = `학습자 ${index.list.length + 1}`;
+        writeJSON(PROFILES_KEY, { active: id, list });
+        // 새 프로필은 온보딩부터 시작한다
+        dispatch({ type: "hydrate", state: { profileId: id, profiles: list, name } });
+      },
+
+      removeProfile: (id: string) => {
+        const index = loadProfileIndex();
+        if (index.list.length <= 1) return;
+        const list = index.list.filter((p) => p.id !== id);
+        try {
+          localStorage.removeItem(stateKey(id));
+        } catch {
+          /* 무시 */
+        }
+        const nextId = index.active === id ? list[0].id : index.active;
+        writeJSON(PROFILES_KEY, { active: nextId, list });
+        dispatch({
+          type: "hydrate",
+          state: { ...loadProfileState(nextId), profileId: nextId, profiles: list },
+        });
+      },
     }),
     [dispatch],
   );
