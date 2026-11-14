@@ -7,15 +7,16 @@
 
 :root {
   /* ---- Brand ---- */
-  --brand: #4b3bd4;
-  --brand-deep: #3a2cae;
-  --brand-soft: #eeecfd;
-  --brand-ink: #2f239b;
+  /* 핸드오프 브랜드 토큰 (pingo-violet / lavender) */
+  --brand: #4b3ce6;
+  --brand-deep: #3a2cbe;
+  --brand-soft: #edeaff;
+  --brand-ink: #2f23a8;
 
   /* ---- Reward (XP·스트릭·보상) ---- */
-  --gold: #d99a2b;
-  --gold-deep: #b37c1b;
-  --gold-soft: #fbf3e4;
+  --gold: #f4b936;
+  --gold-deep: #c89021;
+  --gold-soft: #fdf4e2;
 
   --teal: #1d93a8;
   --teal-deep: #15707f;
@@ -33,11 +34,11 @@
   --no-ink: #8f1f2c;
 
   /* ---- Neutrals (약간의 블루 틴트) ---- */
-  --canvas: #f6f7fb;
+  --canvas: #f7f8fc;
   --surface: #ffffff;
   --surface-2: #f0f2f8;
   --surface-3: #e7eaf3;
-  --ink: #1b1c2b;
+  --ink: #1e2030;
   --ink-2: #4a4e63;
   --muted: #868ba3;
   --line: #e3e6f0;
@@ -119,10 +120,10 @@
   --a-cream: #45403a;
   --a-shadow: rgba(0, 0, 0, 0.35);
 
-  --brand: #7d6cf5;
-  --brand-deep: #5b4ad0;
-  --brand-soft: #1f1d3a;
-  --brand-ink: #bdb2ff;
+  --brand: #8678ff;
+  --brand-deep: #5e4ee0;
+  --brand-soft: #211d44;
+  --brand-ink: #c5bcff;
 
   --gold: #e2ab4a;
   --gold-deep: #b9872f;

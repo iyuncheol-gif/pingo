@@ -204,7 +204,7 @@ export function LessonPlayer({ unitId, lessonIndex, practice, onExit, onDone }: 
 
         {(exercise.kind === "word-bank" || exercise.kind === "type-in") && (
           <div className="source">
-            <Mascot size={76} mood="think" />
+            <Mascot size={128} mood="think" />
             <div className="source__bubble">
               <p className={exercise.kind === "word-bank" && exercise.direction === "en->ko" ? "t-en source__text" : "source__text"}>
                 {exercise.prompt}
@@ -264,7 +264,7 @@ export function LessonPlayer({ unitId, lessonIndex, practice, onExit, onDone }: 
       </footer>
 
       <Modal open={showQuit} onClose={() => setShowQuit(false)}>
-        <Mascot size={96} mood="sad" />
+        <Mascot size={180} mood="sad" />
         <h2 className="t-title" style={{ marginTop: 10 }}>지금 나가면 진도가 사라져요</h2>
         <p className="t-body" style={{ color: "var(--ink-2)", marginTop: 8 }}>
           이 레슨에서 푼 {solved}문제는 저장되지 않습니다.
@@ -303,7 +303,7 @@ export function LessonPlayer({ unitId, lessonIndex, practice, onExit, onDone }: 
       </Modal>
 
       <Modal open={dead && state.hearts <= 0}>
-        <Mascot size={96} mood="sad" />
+        <Mascot size={180} mood="sad" />
         <h2 className="t-title" style={{ marginTop: 10 }}>하트를 모두 썼어요</h2>
         <p className="t-body" style={{ color: "var(--ink-2)", marginTop: 8 }}>
           {formatCountdown(heartsReadyIn(state))} 뒤에 하트가 하나 회복돼요.

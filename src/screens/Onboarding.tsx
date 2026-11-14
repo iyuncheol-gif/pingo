@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Mascot, IconCheck, IconChevron, IconX, Logo } from "../art/brand";
+import { Mascot, IconCheck, IconChevron, IconQuest, IconX, Logo } from "../art/brand";
 import { Button } from "../components/ui";
 import { ExerciseView, type Response } from "../components/lesson/exercises";
 import { SECTIONS } from "../data/course";
@@ -80,15 +80,46 @@ export function Onboarding() {
         </div>
       </header>
 
-      <main className="onb__body">
+      <main className={`onb__body ${step === "hello" ? "onb__body--hero" : ""}`}>
         {step === "hello" && (
-          <div className="onb__hero">
-            <Mascot size={150} mood="happy" />
-            <h1 className="t-display">문장으로 쌓는 영어, Pingo</h1>
-            <p className="t-body" style={{ color: "var(--ink-2)", maxWidth: 420 }}>
-              하루 10분이면 충분해요. 몇 가지만 알려주시면 난이도를 맞춰 드릴게요.
-            </p>
-          </div>
+          <section className="hero">
+            {/* 왼쪽 44%는 비워 둔 아트 — 문구는 HTML로 유지한다 */}
+            <picture className="hero__art" aria-hidden="true">
+              <source media="(min-width: 1280px)" srcSet="/assets/pingo-key-visual-1672.webp" />
+              <source media="(min-width: 768px)" srcSet="/assets/pingo-key-visual-1280.webp" />
+              <img src="/assets/pingo-key-visual-768.webp" alt="" decoding="async" />
+            </picture>
+
+            <div className="hero__copy">
+              <span className="hero__eyebrow">
+                <IconQuest size={13} /> 하루 10분 영어
+              </span>
+              <h1 className="hero__title">문장으로 쌓는 영어, Pingo</h1>
+              <p className="hero__lead">
+                하루 10분이면 충분해요. 나에게 맞는 난이도로 시작해 보세요.
+              </p>
+              <Button size="lg" onClick={() => setStep("reason")}>
+                시작하기
+              </Button>
+            </div>
+          </section>
+        )}
+
+        {step === "hello" && (
+          <ul className="hero__facts">
+            <li>
+              <strong>4단계</strong>
+              <span>기초부터 심화까지</span>
+            </li>
+            <li>
+              <strong>6가지</strong>
+              <span>듣기·말 바꾸기·짝 맞추기</span>
+            </li>
+            <li>
+              <strong>하루 10분</strong>
+              <span>스트릭으로 꾸준하게</span>
+            </li>
+          </ul>
         )}
 
         {step === "reason" && (
@@ -229,7 +260,7 @@ export function Onboarding() {
         )}
       </main>
 
-      <footer className="onb__foot">
+      <footer className={`onb__foot ${step === "hello" ? "is-hidden" : ""}`}>
         <Button
           size="lg"
           disabled={(step === "reason" && !reason) || (step === "level" && level === null)}
@@ -253,7 +284,7 @@ function Question({ title, children }: { title: string; children: React.ReactNod
   return (
     <div className="onb__q">
       <div className="source source--onb">
-        <Mascot size={78} />
+        <Mascot size={128} />
         <div className="source__bubble">
           <p className="source__text">{title}</p>
         </div>
@@ -307,7 +338,7 @@ function Placement({
       <div className="onb">
         <main className="onb__body">
           <div className="onb__hero">
-            <Mascot size={140} mood="happy" />
+            <Mascot size={240} mood="happy" />
             <h1 className="t-display">
               {score}/{questions.length} 맞혔어요
             </h1>

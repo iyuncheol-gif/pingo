@@ -100,7 +100,7 @@ export default function App() {
       </Shell>
 
       <Modal open={blocked} onClose={() => setBlocked(false)}>
-        <Mascot size={96} mood="sad" />
+        <Mascot size={180} mood="sad" />
         <h2 className="t-title" style={{ marginTop: 10 }}>하트가 없어요</h2>
         <p className="t-body" style={{ color: "var(--ink-2)", marginTop: 8 }}>
           {formatCountdown(heartsReadyIn(state))} 뒤에 하나 회복돼요. 완료한 레슨은 하트 없이 복습할 수 있어요.

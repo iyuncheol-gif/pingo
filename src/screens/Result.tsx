@@ -17,7 +17,7 @@ export function Result({
   return (
     <div className="result">
       <div className="result__hero">
-        <Mascot size={150} mood={result.perfect ? "happy" : "idle"} />
+        <Mascot size={240} mood={result.perfect ? "happy" : "idle"} />
         <h1 className="t-display">{result.perfect ? "완벽했어요!" : "레슨 완료!"}</h1>
         <p className="t-body" style={{ color: "var(--ink-2)" }}>
           {result.perfect

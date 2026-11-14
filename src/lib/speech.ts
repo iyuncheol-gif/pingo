@@ -81,6 +81,24 @@ export function currentVoice(): SpeechSynthesisVoice | null {
   return chooseVoice();
 }
 
+/**
+ * 앱 전역에서 "첫 사용자 입력"을 한 번 가로채 음성/오디오 엔진을 깨운다.
+ * iOS Safari는 제스처 안에서 한 번 발화해야 이후의 프로그램 재생(자동 재생 포함)을 허용한다.
+ * useEffect 안에서 깨우는 것만으로는 제스처가 아니어서 열리지 않는다.
+ */
+export function installAudioUnlock() {
+  if (typeof window === "undefined") return;
+  const unlock = () => {
+    primeSpeech();
+    const ac = audio();
+    if (ac && ac.state === "suspended") void ac.resume();
+  };
+  const opts = { once: true, capture: true } as const;
+  window.addEventListener("pointerdown", unlock, opts);
+  window.addEventListener("touchend", unlock, opts);
+  window.addEventListener("keydown", unlock, opts);
+}
+
 /** 첫 사용자 입력에서 엔진을 깨운다. iOS는 제스처 안에서 한 번 울려야 이후가 열린다. */
 export function primeSpeech() {
   if (primed || typeof window === "undefined" || !window.speechSynthesis) return;

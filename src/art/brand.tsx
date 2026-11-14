@@ -6,48 +6,35 @@
 
 export type Mood = "idle" | "happy" | "sad" | "think";
 
-export function Mascot({ size = 96, mood = "idle" }: { size?: number; mood?: Mood }) {
-  const pupilX = mood === "think" ? 1.5 : 0;
-  const pupilY = mood === "think" ? -2 : 0;
+/**
+ * 마스코트 "핑고" — 디자인 핸드오프의 고양이 캐릭터.
+ * 투명 배경 WebP를 쓰고, 핸드오프 규정대로 색을 바꾸거나 늘리거나 좌우 반전하지 않는다.
+ * mood는 호출부 호환을 위해 남겨 두되 실루엣은 건드리지 않고 미세한 모션만 준다.
+ */
+export function Mascot({
+  size = 96,
+  mood = "idle",
+  informative = false,
+}: {
+  size?: number;
+  mood?: Mood;
+  /** true면 의미 있는 이미지로 보고 대체 텍스트를 넣는다 */
+  informative?: boolean;
+}) {
   return (
-    <svg viewBox="0 0 96 96" width={size} height={size} role="presentation" aria-hidden="true">
-      <ellipse cx="48" cy="90" rx="25" ry="4" fill="var(--a-shadow)" />
-      {/* 발 */}
-      <path d="M33 78c5 0 8 3 8 7 0 2-2 3-5 3h-8c-3 0-4-2-2-4z" fill="var(--gold-deep)" />
-      <path d="M63 78c-5 0-8 3-8 7 0 2 2 3 5 3h8c3 0 4-2 2-4z" fill="var(--gold-deep)" />
-      {/* 몸통 */}
-      <path
-        d="M48 6c20 0 32 17 32 40 0 24-14 38-32 38S16 70 16 46C16 23 28 6 48 6z"
-        fill="var(--brand)"
-      />
-      {/* 배 */}
-      <ellipse cx="48" cy="60" rx="21" ry="22" fill="var(--a-paper)" />
-      {/* 날개 */}
-      <path d="M17 44c-3 9-2 20 2 26 3 4 7 3 7-1V45c0-4-7-6-9-1z" fill="var(--brand-deep)" />
-      <path d="M79 44c3 9 2 20-2 26-3 4-7 3-7-1V45c0-4 7-6 9-1z" fill="var(--brand-deep)" />
-      {/* 부리 */}
-      <path d="M48 40l10 7-10 8-10-8z" fill="var(--gold)" />
-      <path d="M48 47l10 0-10 8-10-8z" fill="var(--gold-deep)" />
-      {/* 눈 */}
-      {mood === "happy" ? (
-        <>
-          <path d="M31 31c3-4 9-4 12 0" stroke="var(--ink)" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-          <path d="M53 31c3-4 9-4 12 0" stroke="var(--ink)" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-        </>
-      ) : mood === "sad" ? (
-        <>
-          <path d="M31 33c3 4 9 4 12 0" stroke="var(--ink)" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-          <path d="M53 33c3 4 9 4 12 0" stroke="var(--ink)" strokeWidth="3.2" fill="none" strokeLinecap="round" />
-        </>
-      ) : (
-        <>
-          <circle cx="37" cy="32" r="8" fill="var(--a-paper)" />
-          <circle cx="59" cy="32" r="8" fill="var(--a-paper)" />
-          <circle cx={37 + pupilX} cy={32 + pupilY} r="3.9" fill="var(--ink)" />
-          <circle cx={59 + pupilX} cy={32 + pupilY} r="3.9" fill="var(--ink)" />
-        </>
-      )}
-    </svg>
+    <img
+      className={`mascot mascot--${mood}`}
+      src="/assets/pingo-cat-mascot-512.webp"
+      srcSet="/assets/pingo-cat-mascot-512.webp 512w, /assets/pingo-cat-mascot.webp 1312w"
+      sizes={`${size}px`}
+      width={size}
+      height={Math.round((size * 1199) / 1312)}
+      style={{ width: size, height: "auto" }}
+      alt={informative ? "P 배지를 든 회색과 흰색 고양이 Pingo" : ""}
+      aria-hidden={informative ? undefined : true}
+      decoding="async"
+      draggable={false}
+    />
   );
 }
 

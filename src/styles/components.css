@@ -385,3 +385,22 @@
   letter-spacing: -0.03em;
   color: var(--brand);
 }
+
+/* ---------- 마스코트 (핸드오프 에셋) ---------- */
+.mascot {
+  display: block;
+  /* 실루엣 주변 여백 확보 — 핸드오프 규정 */
+  flex: none;
+  user-select: none;
+}
+.mascot--happy {
+  animation: mascot-pop var(--spring) both;
+}
+@keyframes mascot-pop {
+  from {
+    transform: scale(0.86);
+  }
+  to {
+    transform: scale(1);
+  }
+}

@@ -45,7 +45,7 @@ export function Profile() {
   return (
     <div className="page">
       <header className="profile__head card">
-        <Mascot size={92} mood="happy" />
+        <Mascot size={132} mood="happy" />
         <div className="grow">
           <h1 className="t-title">{state.name}</h1>
           <p className="t-cap">
