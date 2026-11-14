@@ -1299,3 +1299,61 @@
     gap: 10px;
   }
 }
+
+/* ---------- 음성 재생 실패 안내 ---------- */
+.audio-warn {
+  display: grid;
+  gap: 6px;
+  margin: -10px 0 22px;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  border: 2px solid var(--no);
+  background: var(--no-soft);
+  color: var(--no-ink);
+}
+.audio-warn strong {
+  font-size: 14px;
+}
+.audio-warn p {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.audio-warn button {
+  justify-self: start;
+  margin-top: 4px;
+  padding: 7px 12px;
+  border-radius: var(--r-sm);
+  background: var(--no);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* ---------- 음성 선택 ---------- */
+.voice-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.field--select {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 700;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 21px, calc(100% - 13px) 21px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+@media (max-width: 520px) {
+  .voice-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

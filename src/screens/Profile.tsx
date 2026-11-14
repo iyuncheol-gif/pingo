@@ -3,6 +3,9 @@ import { Bar, Button } from "../components/ui";
 import { LEAGUES, leagueTier } from "../data/league";
 import { TIER_LABEL } from "../data/course";
 import { useActions, useCourseProgress, useStore } from "../state/store";
+import { englishVoices, speak } from "../lib/speech";
+import { useEffect, useState } from "react";
+import { IconSpeaker } from "../art/brand";
 
 const BADGES = [
   { id: "first", name: "첫걸음", need: (s: Stats) => s.lessons >= 1, hint: "레슨 1개 완료" },
@@ -118,6 +121,18 @@ export function Profile() {
           </div>
           <Toggle on={state.settings.autoSpeak} onChange={(on) => actions.setSettings({ autoSpeak: on })} />
         </div>
+        <div className="setting">
+          <div className="grow">
+            <strong className="t-head">듣기 문제 출제</strong>
+            <p className="t-cap">기기에 영어 음성이 없으면 꺼 두세요</p>
+          </div>
+          <Toggle on={state.settings.listening} onChange={(on) => actions.setSettings({ listening: on })} />
+        </div>
+      </section>
+
+      <section className="card panel">
+        <h3 className="panel__title">영어 음성</h3>
+        <VoicePicker />
       </section>
 
       <section className="card panel">
@@ -135,6 +150,57 @@ export function Profile() {
         </Button>
       </section>
     </div>
+  );
+}
+
+function VoicePicker() {
+  const { state } = useStore();
+  const actions = useActions();
+  const [voices, setVoices] = useState(() => englishVoices());
+
+  useEffect(() => {
+    // 음성 목록은 비동기로 채워진다 — 한 번 더 읽어 준다
+    const timer = window.setTimeout(() => setVoices(englishVoices()), 600);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  if (voices.length === 0) {
+    return (
+      <p className="t-cap">
+        이 기기에서 영어 음성을 찾지 못했어요. 듣기 문제를 꺼 두고 학습하시는 걸 권합니다.
+      </p>
+    );
+  }
+
+  const selected = state.settings.voiceURI ?? voices[0].voiceURI;
+
+  return (
+    <>
+      <p className="t-cap" style={{ marginBottom: 10 }}>
+        가장 자연스러운 음성을 자동으로 고르지만, 직접 바꿀 수 있어요. 목록은 기기에 설치된 음성입니다.
+      </p>
+      <div className="voice-row">
+        <select
+          className="field field--select"
+          value={selected}
+          onChange={(event) => actions.setSettings({ voiceURI: event.target.value })}
+          aria-label="영어 음성 선택"
+        >
+          {voices.map((voice) => (
+            <option key={voice.voiceURI} value={voice.voiceURI}>
+              {voice.name} ({voice.lang})
+            </option>
+          ))}
+        </select>
+        <Button
+          tone="ghost"
+          onClick={() => speak("This is how your lessons will sound.")}
+          aria-label="선택한 음성 들어보기"
+        >
+          <IconSpeaker size={18} /> 들어보기
+        </Button>
+      </div>
+    </>
   );
 }
 

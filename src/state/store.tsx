@@ -13,6 +13,7 @@ import {
 } from "react";
 import { ALL_UNITS, nodeCount } from "../data/course";
 import { questReward } from "../data/quests";
+import { setPreferredVoice } from "../lib/speech";
 
 export const MAX_HEARTS = 5;
 export const HEART_REGEN_MS = 30 * 60 * 1000;
@@ -32,6 +33,10 @@ export interface Settings {
   theme: "light" | "dark" | "system";
   sound: boolean;
   autoSpeak: boolean;
+  /** 듣기 문제 출제 여부 — 기기에 영어 음성이 없으면 끌 수 있다 */
+  listening: boolean;
+  /** 사용자가 직접 고른 음성 (voiceURI). 비우면 품질 순으로 자동 선택 */
+  voiceURI: string | null;
 }
 
 export interface QuestProgress {
@@ -103,7 +108,7 @@ const initial: State = {
   quests: { ...EMPTY_QUESTS },
   leagueWeek: weekKey(),
   leagueXp: 0,
-  settings: { theme: "system", sound: true, autoSpeak: true },
+  settings: { theme: "system", sound: true, autoSpeak: true, listening: true, voiceURI: null },
 };
 
 type Action =
@@ -149,7 +154,14 @@ function reducer(state: State, action: Action): State {
     case "hydrate":
       return rollDay(withRegen({ ...state, ...action.state, ready: true }));
 
-    case "onboard":
+    case "onboard": {
+      /* 건너뛴 유닛은 '통과'로 표시한다.
+         열어두기만 하면 현재 노드 계산이 늘 유닛 1을 가리켜
+         높은 난이도를 골라도 기초부터 시작하게 된다. */
+      const done: Record<string, number> = { ...state.done };
+      ALL_UNITS.slice(0, action.unlockedThrough).forEach((ref) => {
+        done[ref.unit.id] = nodeCount(ref.unit);
+      });
       return {
         ...state,
         onboarded: true,
@@ -157,7 +169,9 @@ function reducer(state: State, action: Action): State {
         reason: action.reason,
         goalXp: action.goalXp,
         unlockedThrough: action.unlockedThrough,
+        done,
       };
+    }
 
     case "loseHeart": {
       const base = withRegen(state);
@@ -271,6 +285,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const timer = window.setInterval(() => dispatch({ type: "hydrate", state: {} }), 20000);
     return () => window.clearInterval(timer);
   }, [state.ready, state.hearts]);
+
+  // 선택한 음성을 재생 모듈에 반영
+  useEffect(() => {
+    setPreferredVoice(state.settings.voiceURI);
+  }, [state.settings.voiceURI]);
 
   // 테마 적용
   useEffect(() => {

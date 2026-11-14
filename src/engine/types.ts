@@ -61,4 +61,6 @@ export interface LessonSpec {
   tier: Tier;
   isReview: boolean;
   title: string;
+  /** 기기에 영어 음성이 없을 때 듣기 문제를 빼기 위한 스위치 */
+  allowListening?: boolean;
 }

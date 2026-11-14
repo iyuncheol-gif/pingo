@@ -3,7 +3,7 @@ import { ALL_UNITS, nodeCount } from "../../data/course";
 import { answerText, buildLesson, grade, promptLabel } from "../../engine/generate";
 import type { Exercise } from "../../engine/types";
 import { MAX_HEARTS, formatCountdown, heartsReadyIn, useActions, useStore } from "../../state/store";
-import { sfx, speak } from "../../lib/speech";
+import { primeSpeech, sfx, speak } from "../../lib/speech";
 import { Button, Modal } from "../ui";
 import {
   IconCheck,
@@ -48,10 +48,11 @@ export function LessonPlayer({ unitId, lessonIndex, practice, onExit, onDone }: 
         tier: ref.section.tier,
         isReview,
         title: ref.unit.title,
+        allowListening: state.settings.listening,
       },
       practice ? Math.floor(Date.now() / 60000) % 7 : 0,
     );
-  }, [ref, unitId, lessonIndex, isReview, practice]);
+  }, [ref, unitId, lessonIndex, isReview, practice, state.settings.listening]);
 
   const [queue, setQueue] = useState<Exercise[]>(queue0);
   const [cursor, setCursor] = useState(0);
@@ -66,6 +67,10 @@ export function LessonPlayer({ unitId, lessonIndex, practice, onExit, onDone }: 
   const [showHeartsIntro, setShowHeartsIntro] = useState(false);
   const [dead, setDead] = useState(false);
   const startedAt = useRef(Date.now());
+  useEffect(() => {
+    // 첫 진입 시 음성 엔진을 깨워둔다 (iOS는 제스처 안에서 한 번 울려야 열린다)
+    primeSpeech();
+  }, []);
   const mistakesRef = useRef(0);
 
   useEffect(() => {

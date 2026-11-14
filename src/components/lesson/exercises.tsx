@@ -3,7 +3,7 @@ import type { Exercise } from "../../engine/types";
 import { Pictogram } from "../../art/pictograms";
 import { IconSlow, IconSpeaker } from "../../art/brand";
 import { speak } from "../../lib/speech";
-import { useStore } from "../../state/store";
+import { useActions, useStore } from "../../state/store";
 
 export type Response = string | string[] | boolean | null;
 
@@ -166,8 +166,11 @@ function TypeIn({ exercise, response, onChange, locked, verdict }: ExerciseProps
 function Listen(props: ExerciseProps) {
   const { exercise } = props;
   const { state } = useStore();
+  const actions = useActions();
   const autoSpeak = state.settings.autoSpeak;
   const spoken = useRef<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
   useEffect(() => {
     if (exercise.kind !== "listen" || !autoSpeak) return;
     if (spoken.current === exercise.id) return;
@@ -181,13 +184,20 @@ function Listen(props: ExerciseProps) {
   }, [exercise, autoSpeak]);
 
   if (exercise.kind !== "listen") return null;
+
+  /* speak()는 핸들러 안에서 동기로 호출해야 한다 — iOS는 제스처 밖 재생을 막는다 */
+  const play = (slow: boolean) => {
+    setFailed(false);
+    speak(exercise.sentence.en, { slow }).then((ok) => setFailed(!ok));
+  };
+
   return (
     <div className="listen">
       <div className="listen__players">
         <button
           type="button"
           className="play play--main"
-          onClick={() => speak(exercise.sentence.en)}
+          onClick={() => play(false)}
           aria-label="문장 듣기"
         >
           <IconSpeaker size={34} />
@@ -195,12 +205,26 @@ function Listen(props: ExerciseProps) {
         <button
           type="button"
           className="play play--slow"
-          onClick={() => speak(exercise.sentence.en, { slow: true })}
+          onClick={() => play(true)}
           aria-label="천천히 듣기"
         >
           <IconSlow size={22} />
         </button>
       </div>
+
+      {failed && (
+        <div className="audio-warn">
+          <strong>이 기기에서 음성을 재생할 수 없어요.</strong>
+          <p>
+            기기에 영어 음성이 설치돼 있지 않거나 브라우저가 재생을 막고 있어요. 듣기 문제를 빼고
+            학습할 수 있습니다.
+          </p>
+          <button type="button" onClick={() => actions.setSettings({ listening: false })}>
+            듣기 문제 끄기
+          </button>
+        </div>
+      )}
+
       <WordBank {...props} />
     </div>
   );

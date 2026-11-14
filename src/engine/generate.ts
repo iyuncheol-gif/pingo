@@ -77,7 +77,11 @@ export function buildLesson(spec: LessonSpec, attempt = 0): Exercise[] {
   const { unit } = ref;
 
   const effectiveTier = (spec.isReview ? Math.min(4, spec.tier + 1) : spec.tier) as Tier;
-  const rule = TIER_RULES[effectiveTier];
+  const base = TIER_RULES[effectiveTier];
+  const listening = spec.allowListening !== false;
+  const rule: TierRule = listening
+    ? base
+    : { ...base, listenRate: 0, typeRate: Math.min(0.6, base.typeRate + base.listenRate) };
   const rand = mulberry32(hashString(`${spec.unitId}:${spec.lessonIndex}:${attempt}`));
 
   /* 이번 레슨에서 "새로 배우는" 재료와, 같은 유닛에서 이미 지나온 복습 재료를 나눈다.
@@ -250,7 +254,7 @@ export function buildLesson(spec: LessonSpec, attempt = 0): Exercise[] {
   }
 
   /* 듣기는 레슨마다 최소 1개 보장 — 확률만으로는 한 레슨 내내 안 나오는 경우가 잦다 */
-  if (!chosenProduction.some((item) => item.kind === "listen")) {
+  if (listening && !chosenProduction.some((item) => item.kind === "listen")) {
     const swapAt = chosenProduction.findIndex((item) => item.kind === "word-bank");
     const source = swapAt >= 0 ? chosenProduction[swapAt] : null;
     if (source && source.kind === "word-bank") {
