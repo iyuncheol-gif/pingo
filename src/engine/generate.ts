@@ -231,6 +231,34 @@ export function buildLesson(spec: LessonSpec, attempt = 0): Exercise[] {
     } as Exercise);
   }
 
+  /* 듣기는 레슨마다 최소 1개 보장 — 확률만으로는 한 레슨 내내 안 나오는 경우가 잦다 */
+  if (!chosenProduction.some((item) => item.kind === "listen")) {
+    const swapAt = chosenProduction.findIndex((item) => item.kind === "word-bank");
+    const source = swapAt >= 0 ? chosenProduction[swapAt] : null;
+    if (source && source.kind === "word-bank") {
+      const enTokens = tokenize(source.sentence);
+      chosenProduction[swapAt] = {
+        kind: "listen",
+        id: source.id,
+        tokens: enTokens,
+        bank: buildBank(enTokens, tokenPool, rule, rand),
+        sentence: source.sentence,
+        isNew: false,
+      };
+    } else if (sentences.length > 0 && chosenProduction.length > 0) {
+      const sentence = pick(sentences, rand);
+      const enTokens = tokenize(sentence);
+      chosenProduction[0] = {
+        kind: "listen",
+        id: nextId(),
+        tokens: enTokens,
+        bank: buildBank(enTokens, tokenPool, rule, rand),
+        sentence,
+        isNew: false,
+      };
+    }
+  }
+
   // 배치: 앞쪽은 인지 문제로 워밍업 → 짝맞추기 → 이후 산출 문제를 섞어 배치
   const warmup = chosenRecognition.slice(0, Math.ceil(chosenRecognition.length / 2));
   const rest = chosenRecognition.slice(warmup.length);

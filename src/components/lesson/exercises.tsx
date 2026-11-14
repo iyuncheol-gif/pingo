@@ -171,8 +171,12 @@ function Listen(props: ExerciseProps) {
   useEffect(() => {
     if (exercise.kind !== "listen" || !autoSpeak) return;
     if (spoken.current === exercise.id) return;
-    spoken.current = exercise.id;
-    const timer = window.setTimeout(() => speak(exercise.sentence.en), 280);
+    // 가드는 "실제로 재생한 뒤"에 건다. 마운트 시점에 걸면 StrictMode의
+    // 이펙트 재실행(정리 → 재실행)에서 타이머만 취소되고 영영 재생되지 않는다.
+    const timer = window.setTimeout(() => {
+      spoken.current = exercise.id;
+      void speak(exercise.sentence.en);
+    }, 320);
     return () => window.clearTimeout(timer);
   }, [exercise, autoSpeak]);
 

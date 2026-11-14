@@ -134,8 +134,16 @@ function UnitBlock({
           const id = `${unit.id}-${index}`;
           const offset = waveOffset(startIndex + index);
 
+          const popped = openId === id && !locked;
+
           return (
-            <li key={id} className="nodes__row" style={{ transform: `translateX(${offset}px)` }}>
+            <li
+              key={id}
+              className="nodes__row"
+              /* transform 대신 left — transform은 쌓임 맥락을 만들어
+                 팝오버가 아래쪽 노드에 가려지고 fixed 스크림까지 깨진다 */
+              style={{ left: offset, zIndex: popped ? 80 : undefined }}
+            >
               <div className="node-wrap" ref={isCurrent ? currentRef : undefined}>
                 {isCurrent && openId === null && <span className="node__flag">시작</span>}
                 <button
@@ -160,7 +168,7 @@ function UnitBlock({
                   </span>
                 </button>
 
-                {openId === id && !locked && (
+                {popped && (
                   <>
                     <button
                       type="button"

@@ -281,7 +281,8 @@
   padding: 22px 0 6px;
 }
 .nodes__row {
-  transition: transform var(--base);
+  position: relative;
+  transition: left var(--base);
 }
 .node-wrap {
   position: relative;
@@ -1284,9 +1285,6 @@
   }
   .result__tiles {
     grid-template-columns: repeat(3, 1fr);
-  }
-  .nodes__row {
-    transform: scale(0.94) translateX(var(--x, 0));
   }
 }
 
