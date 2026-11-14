@@ -1,0 +1,387 @@
+/* ============================================================
+   Pingo UI Kit
+   - 모든 인터랙티브 요소는 "눌리는 두께(--lift)"를 공유해 조작감 통일
+   - 상태(기본/선택/정답/오답/잠김)는 색이 아니라 색+아이콘+테두리로 중복 표시
+   ============================================================ */
+
+/* ---------- Button ---------- */
+.btn {
+  --btn-bg: var(--brand);
+  --btn-edge: var(--brand-deep);
+  --btn-fg: #fff;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: var(--r-md);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-weight: 900;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 var(--lift) 0 var(--btn-edge);
+  transition: transform var(--fast), box-shadow var(--fast), filter var(--fast);
+  user-select: none;
+  white-space: nowrap;
+}
+.btn:active:not(:disabled) {
+  transform: translateY(var(--lift));
+  box-shadow: 0 0 0 var(--btn-edge);
+}
+.btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.btn:disabled {
+  --btn-bg: var(--locked);
+  --btn-edge: transparent;
+  --btn-fg: var(--muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.btn--block {
+  width: 100%;
+}
+.btn--lg {
+  min-height: 56px;
+  font-size: 16px;
+  padding: 0 28px;
+}
+.btn--sm {
+  min-height: 38px;
+  font-size: 13px;
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+}
+.btn--ok {
+  --btn-bg: var(--ok);
+  --btn-edge: var(--ok-deep);
+}
+.btn--no {
+  --btn-bg: var(--no);
+  --btn-edge: var(--no-deep);
+}
+.btn--gold {
+  --btn-bg: var(--gold);
+  --btn-edge: var(--gold-deep);
+  --btn-fg: #2e1f05;
+}
+.btn--ghost {
+  --btn-bg: var(--surface);
+  --btn-edge: var(--line-deep);
+  --btn-fg: var(--brand);
+  border: 2px solid var(--line);
+}
+.btn--quiet {
+  --btn-bg: transparent;
+  --btn-edge: transparent;
+  --btn-fg: var(--muted);
+  box-shadow: none;
+}
+.btn--quiet:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+/* ---------- Card & option ---------- */
+.card {
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: 0 var(--lift) 0 var(--line);
+}
+.card--flat {
+  box-shadow: none;
+}
+.card__pad {
+  padding: 18px;
+}
+
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: 0 var(--lift) 0 var(--line);
+  color: var(--ink);
+  font-weight: 800;
+  transition: transform var(--fast), box-shadow var(--fast), border-color var(--fast),
+    background var(--fast);
+}
+.opt:hover:not(:disabled):not(.is-on) {
+  background: var(--surface-2);
+}
+.opt:active:not(:disabled) {
+  transform: translateY(var(--lift));
+  box-shadow: none;
+}
+.opt.is-on {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  box-shadow: 0 var(--lift) 0 var(--brand);
+  color: var(--brand-ink);
+}
+.opt.is-ok {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+  box-shadow: 0 var(--lift) 0 var(--ok);
+  color: var(--ok-ink);
+}
+.opt.is-no {
+  border-color: var(--no);
+  background: var(--no-soft);
+  box-shadow: 0 var(--lift) 0 var(--no);
+  color: var(--no-ink);
+}
+.opt:disabled {
+  cursor: default;
+}
+.opt__key {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 2px solid var(--line);
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--muted);
+}
+.opt.is-on .opt__key {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.opt.is-ok .opt__key {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.opt.is-no .opt__key {
+  border-color: var(--no);
+  color: var(--no);
+}
+
+/* ---------- Progress ---------- */
+.bar {
+  position: relative;
+  height: 16px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.bar__fill {
+  height: 100%;
+  min-width: 16px;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+  transition: width var(--base);
+}
+.bar__fill[style*="width: 0%"] {
+  min-width: 0;
+}
+.bar--gold .bar__fill {
+  background: var(--gold);
+}
+.bar--ok .bar__fill {
+  background: var(--ok);
+}
+.bar--thin {
+  height: 10px;
+}
+
+/* ---------- Chip / stat ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--ink);
+}
+.chip--bare {
+  background: transparent;
+  border-color: transparent;
+}
+
+/* ---------- Sheet (레슨 피드백) ---------- */
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  padding: 18px 20px calc(18px + env(safe-area-inset-bottom));
+  border-top: 2px solid var(--line);
+  background: var(--surface);
+  animation: sheet-up var(--bounce) both;
+}
+.sheet--ok {
+  background: var(--ok-soft);
+  border-top-color: var(--ok);
+}
+.sheet--no {
+  background: var(--no-soft);
+  border-top-color: var(--no);
+}
+.sheet__inner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Modal ---------- */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(20, 16, 40, 0.55);
+  backdrop-filter: blur(2px);
+  animation: fade var(--base) both;
+}
+.modal {
+  width: min(420px, 100%);
+  padding: 26px 22px;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  text-align: center;
+  animation: pop var(--bounce) both;
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(12px);
+  }
+}
+
+/* ---------- Tile (단어 은행) ---------- */
+.tile {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  box-shadow: 0 3px 0 var(--line);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--ink);
+  transition: transform var(--fast), box-shadow var(--fast), opacity var(--fast);
+}
+.tile:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: none;
+}
+.tile.is-spent {
+  opacity: 0;
+  pointer-events: none;
+}
+.tile--ghost {
+  background: var(--surface-2);
+  border-color: transparent;
+  box-shadow: none;
+  color: transparent;
+}
+
+/* ---------- Avatar ---------- */
+.ava {
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: var(--r-pill);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-weight: 900;
+  overflow: hidden;
+}
+
+/* ---------- Animations ---------- */
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes shake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-7px); }
+  40%, 60% { transform: translateX(7px); }
+}
+.is-shaking {
+  animation: shake 420ms both;
+}
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 45%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 16px color-mix(in srgb, var(--brand) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 0%, transparent);
+  }
+}
+
+
+/* ---------- Ring ---------- */
+.ring {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+}
+.ring svg {
+  position: absolute;
+  inset: 0;
+}
+.ring__label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+
+/* ---------- Logo ---------- */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.logo__word {
+  font-family: var(--font-en);
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--brand);
+}
