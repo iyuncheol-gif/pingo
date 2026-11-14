@@ -3,7 +3,7 @@ import { Bar, Button } from "../components/ui";
 import { LEAGUES, leagueTier } from "../data/league";
 import { TIER_LABEL } from "../data/course";
 import { useActions, useCourseProgress, useStore } from "../state/store";
-import { englishVoices, speak } from "../lib/speech";
+import { canSpeak, englishVoices, lastSpeechError, speak } from "../lib/speech";
 import { useEffect, useState } from "react";
 import { IconSpeaker } from "../art/brand";
 
@@ -157,6 +157,8 @@ function VoicePicker() {
   const { state } = useStore();
   const actions = useActions();
   const [voices, setVoices] = useState(() => englishVoices());
+  const [check, setCheck] = useState<null | { ok: boolean; detail: string }>(null);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     // 음성 목록은 비동기로 채워진다 — 한 번 더 읽어 준다
@@ -164,11 +166,42 @@ function VoicePicker() {
     return () => window.clearTimeout(timer);
   }, []);
 
+  /* speak()는 반드시 클릭 핸들러 안에서 동기로 호출해야 iOS에서 소리가 난다 */
+  const test = () => {
+    setTesting(true);
+    setCheck(null);
+    speak("This is how your lessons will sound.").then((ok) => {
+      setTesting(false);
+      setCheck({
+        ok,
+        detail: ok
+          ? "재생이 시작됐어요. 소리가 안 들리면 기기 음량과 무음 모드를 확인해 주세요."
+          : describeFailure(),
+      });
+    });
+  };
+
+  const describeFailure = () => {
+    if (!canSpeak()) return "이 브라우저가 음성 합성을 지원하지 않아요.";
+    if (voices.length === 0) return "기기에 영어 음성이 설치돼 있지 않아요.";
+    const err = lastSpeechError();
+    if (err === "not-allowed") return "브라우저가 재생을 막았어요. 화면을 한 번 탭한 뒤 다시 시도해 주세요.";
+    if (err === "synthesis-failed") return "음성 엔진이 재생에 실패했어요. 다른 음성을 골라 보세요.";
+    if (err === "language-unavailable" || err === "voice-unavailable")
+      return "선택한 음성을 쓸 수 없어요. 목록에서 다른 음성을 골라 주세요.";
+    return "재생이 시작되지 않았어요. 다른 음성을 고르거나 듣기 문제를 꺼 주세요.";
+  };
+
   if (voices.length === 0) {
     return (
-      <p className="t-cap">
-        이 기기에서 영어 음성을 찾지 못했어요. 듣기 문제를 꺼 두고 학습하시는 걸 권합니다.
-      </p>
+      <>
+        <p className="t-cap" style={{ marginBottom: 12 }}>
+          이 기기에서 영어 음성을 찾지 못했어요. 듣기 문제를 꺼 두고 학습하시는 걸 권합니다.
+        </p>
+        <Button tone="ghost" onClick={() => actions.setSettings({ listening: false })}>
+          듣기 문제 끄기
+        </Button>
+      </>
     );
   }
 
@@ -183,7 +216,10 @@ function VoicePicker() {
         <select
           className="field field--select"
           value={selected}
-          onChange={(event) => actions.setSettings({ voiceURI: event.target.value })}
+          onChange={(event) => {
+            actions.setSettings({ voiceURI: event.target.value });
+            setCheck(null);
+          }}
           aria-label="영어 음성 선택"
         >
           {voices.map((voice) => (
@@ -192,14 +228,20 @@ function VoicePicker() {
             </option>
           ))}
         </select>
-        <Button
-          tone="ghost"
-          onClick={() => speak("This is how your lessons will sound.")}
-          aria-label="선택한 음성 들어보기"
-        >
-          <IconSpeaker size={18} /> 들어보기
+        <Button tone="ghost" onClick={test} disabled={testing} aria-label="선택한 음성 들어보기">
+          <IconSpeaker size={18} /> {testing ? "재생 중…" : "들어보기"}
         </Button>
       </div>
+
+      {check && (
+        <p className={`voice-check ${check.ok ? "is-ok" : "is-no"}`} role="status">
+          {check.detail}
+        </p>
+      )}
+
+      <p className="t-cap voice-diag">
+        음성 {voices.length}개 인식 · 사용 중 {voices.find((v) => v.voiceURI === selected)?.name ?? "자동"}
+      </p>
     </>
   );
 }

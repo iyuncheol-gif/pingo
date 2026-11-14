@@ -68,7 +68,7 @@ export function LessonPlayer({ unitId, lessonIndex, practice, onExit, onDone }: 
   const [dead, setDead] = useState(false);
   const startedAt = useRef(Date.now());
   useEffect(() => {
-    // 첫 진입 시 음성 엔진을 깨워둔다 (iOS는 제스처 안에서 한 번 울려야 열린다)
+    // 음성 목록만 미리 읽어 둔다 (iOS에서 빈 발화로 깨우면 큐가 멈춘다)
     primeSpeech();
   }, []);
   const mistakesRef = useRef(0);

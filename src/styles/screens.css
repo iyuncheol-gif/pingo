@@ -1563,3 +1563,25 @@
     width: 96px !important;
   }
 }
+
+/* ---------- 음성 진단 ---------- */
+.voice-check {
+  margin-top: 10px;
+  padding: 10px 13px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.voice-check.is-ok {
+  background: var(--ok-soft);
+  color: var(--ok-ink);
+}
+.voice-check.is-no {
+  background: var(--no-soft);
+  color: var(--no-ink);
+}
+.voice-diag {
+  margin-top: 10px;
+  font-size: 12px;
+}

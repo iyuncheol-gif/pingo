@@ -45,6 +45,10 @@ function quality(voice: SpeechSynthesisVoice): number {
 let cache: SpeechSynthesisVoice[] = [];
 let manualURI: string | null = null;
 let primed = false;
+let lastError: string | null = null;
+
+/** 마지막 재생 실패 원인 — 설정 화면 진단에 쓴다 */
+export const lastSpeechError = () => lastError;
 
 function refresh(): SpeechSynthesisVoice[] {
   if (typeof window === "undefined" || !window.speechSynthesis) return [];
@@ -93,24 +97,28 @@ export function installAudioUnlock() {
     const ac = audio();
     if (ac && ac.state === "suspended") void ac.resume();
   };
+  // 이전 세션에서 큐가 멈춘 채 남아 있을 수 있어 한 번 비운다
+  try {
+    window.speechSynthesis.cancel();
+  } catch {
+    /* 무시 */
+  }
   const opts = { once: true, capture: true } as const;
   window.addEventListener("pointerdown", unlock, opts);
   window.addEventListener("touchend", unlock, opts);
   window.addEventListener("keydown", unlock, opts);
 }
 
-/** 첫 사용자 입력에서 엔진을 깨운다. iOS는 제스처 안에서 한 번 울려야 이후가 열린다. */
+/**
+ * 음성 목록만 미리 읽어 둔다.
+ * 예전에는 무음 발화를 큐에 넣어 엔진을 깨웠는데, iOS Safari는 빈 문자열 발화에
+ * end 이벤트를 주지 않아 speechSynthesis가 speaking 상태로 멈춰 버린다.
+ * 그 뒤의 모든 재생이 조용히 무시되므로 프라이밍 발화는 하지 않는다.
+ */
 export function primeSpeech() {
   if (primed || typeof window === "undefined" || !window.speechSynthesis) return;
   primed = true;
   refresh();
-  try {
-    const warm = new SpeechSynthesisUtterance(" ");
-    warm.volume = 0;
-    window.speechSynthesis.speak(warm);
-  } catch {
-    /* 깨우기 실패는 무시 — 실제 재생에서 다시 시도한다 */
-  }
 }
 
 /**
@@ -118,22 +126,41 @@ export function primeSpeech() {
  * 호출부는 반드시 사용자 입력 핸들러 "안에서" 동기로 호출해야 한다.
  */
 export function speak(text: string, { slow = false }: { slow?: boolean } = {}): Promise<boolean> {
-  if (typeof window === "undefined" || !window.speechSynthesis) return Promise.resolve(false);
-  const synth = window.speechSynthesis;
-
-  if (synth.speaking || synth.pending) synth.cancel();
-
-  const utter = new SpeechSynthesisUtterance(text);
-  const voice = chooseVoice();
-  if (voice) {
-    utter.voice = voice;
-    utter.lang = voice.lang;
-  } else {
-    utter.lang = "en-US";
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    lastError = "unsupported";
+    return Promise.resolve(false);
   }
-  utter.rate = slow ? 0.55 : 0.92;
-  utter.pitch = 1;
-  utter.volume = 1;
+  const synth = window.speechSynthesis;
+  const voices = refresh();
+  const voice = chooseVoice();
+
+  const build = () => {
+    const utter = new SpeechSynthesisUtterance(text);
+    // iOS는 현재 목록에 없는 음성 객체를 받으면 아무 소리 없이 무시한다
+    if (voice && voices.includes(voice)) {
+      utter.voice = voice;
+      utter.lang = voice.lang;
+    } else {
+      utter.lang = "en-US";
+    }
+    utter.rate = slow ? 0.55 : 0.92;
+    utter.pitch = 1;
+    utter.volume = 1;
+    return utter;
+  };
+
+  // 멈춰 있는 큐를 먼저 비운다 (iOS에서 흔하다)
+  if (synth.speaking || synth.pending || synth.paused) {
+    try {
+      synth.resume();
+      synth.cancel();
+    } catch {
+      /* 무시 */
+    }
+  }
+
+  lastError = null;
+  const utter = build();
 
   return new Promise<boolean>((resolve) => {
     let settled = false;
@@ -144,25 +171,34 @@ export function speak(text: string, { slow = false }: { slow?: boolean } = {}): 
     };
     utter.onstart = () => done(true);
     utter.onerror = (event) => {
-      if (event.error !== "interrupted" && event.error !== "canceled") done(false);
+      if (event.error !== "interrupted" && event.error !== "canceled") {
+        lastError = event.error;
+        done(false);
+      }
     };
 
     // 제스처 컨텍스트를 유지하기 위해 동기로 바로 호출한다
     synth.speak(utter);
 
-    // 일부 브라우저는 cancel() 직후 첫 발화를 삼킨다 — 한 번만 되살린다
+    // 첫 발화를 삼키는 브라우저가 있어 한 번만 되살린다 (반드시 새 발화 객체로)
     window.setTimeout(() => {
       if (settled) return;
       if (!synth.speaking && !synth.pending) {
+        const retry = build();
+        retry.onstart = () => done(true);
+        retry.onerror = () => done(false);
         try {
-          synth.speak(utter);
+          synth.speak(retry);
         } catch {
           done(false);
         }
       }
-    }, 220);
+    }, 240);
 
-    window.setTimeout(() => done(synth.speaking || synth.pending), 1400);
+    window.setTimeout(() => {
+      if (!settled && !synth.speaking && !synth.pending) lastError = lastError ?? "no-start";
+      done(synth.speaking || synth.pending);
+    }, 1600);
   });
 }
 
