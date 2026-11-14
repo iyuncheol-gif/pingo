@@ -4,6 +4,7 @@ import { LEAGUES, leagueTier } from "../data/league";
 import { TIER_LABEL } from "../data/course";
 import { useActions, useCourseProgress, useStore } from "../state/store";
 import { canSpeak, englishVoices, lastSpeechError, speak } from "../lib/speech";
+import { envSummary } from "../lib/browser";
 import { useEffect, useState } from "react";
 import { IconSpeaker } from "../art/brand";
 
@@ -240,7 +241,10 @@ function VoicePicker() {
     return (
       <>
         <p className="t-cap" style={{ marginBottom: 12 }}>
-          이 기기에서 영어 음성을 찾지 못했어요. 듣기 문제를 꺼 두고 학습하시는 걸 권합니다.
+          {canSpeak()
+            ? "이 기기에서 영어 음성을 찾지 못했어요. 듣기 문제를 꺼 두고 학습하시는 걸 권합니다."
+            : "이 브라우저가 음성 기능을 지원하지 않아요. 크롬이나 사파리에서 열면 발음을 들을 수 있습니다."}{" "}
+          ({envSummary()})
         </p>
         <Button tone="ghost" onClick={() => actions.setSettings({ listening: false })}>
           듣기 문제 끄기
@@ -284,7 +288,8 @@ function VoicePicker() {
       )}
 
       <p className="t-cap voice-diag">
-        음성 {voices.length}개 인식 · 사용 중 {voices.find((v) => v.voiceURI === selected)?.name ?? "자동"}
+        음성 {voices.length}개 인식 · 사용 중{" "}
+        {voices.find((v) => v.voiceURI === selected)?.name ?? "자동"} · {envSummary()}
       </p>
     </>
   );

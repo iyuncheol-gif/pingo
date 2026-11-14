@@ -3,7 +3,7 @@ import { ALL_UNITS, nodeCount } from "../../data/course";
 import { answerText, buildLesson, grade, promptLabel } from "../../engine/generate";
 import type { Exercise } from "../../engine/types";
 import { MAX_HEARTS, formatCountdown, heartsReadyIn, useActions, useStore } from "../../state/store";
-import { primeSpeech, sfx, speak } from "../../lib/speech";
+import { canSpeak, primeSpeech, sfx, speak } from "../../lib/speech";
 import { Button, Modal } from "../ui";
 import {
   IconCheck,
@@ -48,11 +48,12 @@ export function LessonPlayer({ unitId, lessonIndex, practice, onExit, onDone }: 
         tier: ref.section.tier,
         isReview,
         title: ref.unit.title,
-        allowListening: state.settings.listening,
+        allowListening: state.settings.listening && canSpeak(),
       },
       practice ? Math.floor(Date.now() / 60000) % 7 : 0,
     );
   }, [ref, unitId, lessonIndex, isReview, practice, state.settings.listening]);
+  // canSpeak()는 런타임 내내 바뀌지 않으므로 의존성에 넣지 않는다
 
   const [queue, setQueue] = useState<Exercise[]>(queue0);
   const [cursor, setCursor] = useState(0);

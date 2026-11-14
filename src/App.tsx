@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { Shell } from "./components/shell/Shell";
+import { InAppNotice } from "./components/shell/InAppNotice";
 import { LessonPlayer, type LessonResult } from "./components/lesson/LessonPlayer";
 import { Learn } from "./screens/Learn";
 import { Quests } from "./screens/Quests";
@@ -53,7 +54,13 @@ export default function App() {
     );
   }
 
-  if (!state.onboarded) return <Onboarding />;
+  if (!state.onboarded)
+    return (
+      <>
+        <InAppNotice />
+        <Onboarding />
+      </>
+    );
 
   if (result && active) {
     return (
@@ -91,6 +98,7 @@ export default function App() {
 
   return (
     <>
+      <InAppNotice />
       <Shell screen={tab} onNavigate={setTab}>
         {tab === "learn" && <Learn onStart={start} />}
         {tab === "quests" && <Quests />}
