@@ -1585,3 +1585,9 @@
   margin-top: 10px;
   font-size: 12px;
 }
+.audio-warn__diag {
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: var(--no-ink) !important;
+  opacity: 0.75;
+}

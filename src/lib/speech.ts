@@ -46,6 +46,10 @@ let cache: SpeechSynthesisVoice[] = [];
 let manualURI: string | null = null;
 let primed = false;
 let lastError: string | null = null;
+let voiceCountAtLastPlay = 0;
+
+/** 마지막 재생 시점에 인식된 영어 음성 개수 */
+export const englishVoiceCount = () => voiceCountAtLastPlay;
 
 /** 마지막 재생 실패 원인 — 설정 화면 진단에 쓴다 */
 export const lastSpeechError = () => lastError;
@@ -134,10 +138,10 @@ export function speak(text: string, { slow = false }: { slow?: boolean } = {}): 
   const voices = refresh();
   const voice = chooseVoice();
 
-  const build = () => {
+  const build = (withVoice = true) => {
     const utter = new SpeechSynthesisUtterance(text);
     // iOS는 현재 목록에 없는 음성 객체를 받으면 아무 소리 없이 무시한다
-    if (voice && voices.includes(voice)) {
+    if (withVoice && voice && voices.includes(voice)) {
       utter.voice = voice;
       utter.lang = voice.lang;
     } else {
@@ -159,46 +163,66 @@ export function speak(text: string, { slow = false }: { slow?: boolean } = {}): 
     }
   }
 
+  /** 기기가 인식한 영어 음성 개수 — 진단에 쓴다 */
+  voiceCountAtLastPlay = voices.filter((v) => v.lang.toLowerCase().startsWith("en")).length;
+
   lastError = null;
-  const utter = build();
 
   return new Promise<boolean>((resolve) => {
     let settled = false;
+    let retried = false;
     const done = (ok: boolean) => {
       if (settled) return;
       settled = true;
       resolve(ok);
     };
-    utter.onstart = () => done(true);
-    utter.onerror = (event) => {
-      if (event.error !== "interrupted" && event.error !== "canceled") {
+
+    const fire = (withVoice: boolean) => {
+      const utter = build(withVoice);
+      utter.onstart = () => done(true);
+      utter.onerror = (event) => {
+        if (event.error === "interrupted" || event.error === "canceled") return;
         lastError = event.error;
+        // 특정 음성 객체를 거부하는 엔진이 있다 — 음성 지정 없이 한 번 더
+        if (withVoice && !retried) {
+          retried = true;
+          fire(false);
+          return;
+        }
+        done(false);
+      };
+      try {
+        synth.speak(utter);
+      } catch {
+        if (withVoice && !retried) {
+          retried = true;
+          fire(false);
+          return;
+        }
         done(false);
       }
     };
 
     // 제스처 컨텍스트를 유지하기 위해 동기로 바로 호출한다
-    synth.speak(utter);
+    fire(true);
 
-    // 첫 발화를 삼키는 브라우저가 있어 한 번만 되살린다 (반드시 새 발화 객체로)
+    // 큐에 들어가지도 않았다면 음성 지정 없이 한 번 더 시도한다
+    window.setTimeout(() => {
+      if (settled || retried) return;
+      if (!synth.speaking && !synth.pending) {
+        retried = true;
+        fire(false);
+      }
+    }, 500);
+
+    /* 안드로이드 TTS는 첫 발화에서 엔진을 띄우느라 2초 넘게 걸리기도 한다.
+       너무 짧게 끊으면 실제로는 들리는데 실패로 표시된다. */
     window.setTimeout(() => {
       if (settled) return;
-      if (!synth.speaking && !synth.pending) {
-        const retry = build();
-        retry.onstart = () => done(true);
-        retry.onerror = () => done(false);
-        try {
-          synth.speak(retry);
-        } catch {
-          done(false);
-        }
-      }
-    }, 240);
-
-    window.setTimeout(() => {
-      if (!settled && !synth.speaking && !synth.pending) lastError = lastError ?? "no-start";
-      done(synth.speaking || synth.pending);
-    }, 1600);
+      const alive = synth.speaking || synth.pending;
+      if (!alive) lastError = lastError ?? "no-start";
+      done(alive);
+    }, 3500);
   });
 }
 

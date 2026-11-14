@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Exercise } from "../../engine/types";
 import { Pictogram } from "../../art/pictograms";
 import { IconSlow, IconSpeaker } from "../../art/brand";
-import { speak } from "../../lib/speech";
+import { englishVoiceCount, lastSpeechError, speak } from "../../lib/speech";
 import { useActions, useStore } from "../../state/store";
 
 export type Response = string | string[] | boolean | null;
@@ -216,8 +216,13 @@ function Listen(props: ExerciseProps) {
         <div className="audio-warn">
           <strong>이 기기에서 음성을 재생할 수 없어요.</strong>
           <p>
-            기기에 영어 음성이 설치돼 있지 않거나 브라우저가 재생을 막고 있어요. 듣기 문제를 빼고
-            학습할 수 있습니다.
+            {englishVoiceCount() === 0
+              ? "기기에 영어 음성이 설치돼 있지 않아요. 안드로이드는 설정 → 접근성 → 텍스트 읽어주기에서 Google 음성 합성을 기본 엔진으로 두고 영어(미국)를 설치하면 들을 수 있어요."
+              : "브라우저가 재생을 막고 있거나 선택한 음성을 쓸 수 없어요. 설정에서 다른 음성을 골라 보세요."}
+          </p>
+          <p className="audio-warn__diag">
+            영어 음성 {englishVoiceCount()}개 인식
+            {lastSpeechError() ? ` · ${lastSpeechError()}` : ""}
           </p>
           <button type="button" onClick={() => actions.setSettings({ listening: false })}>
             듣기 문제 끄기
